@@ -1,0 +1,240 @@
+- hosts: all
+  become: yes
+  become_user: root
+  tasks:
+    ################### Install Nginx ###################
+    - name: Install Nginx
+      yum:
+        name: nginx
+        state: latest
+      when: "'nginx' in group_names"
+
+    - name: Start Nginx Service
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+      when: "'nginx' in group_names"
+    ################### Install Apache ###################
+    - name: Install httpd
+      yum:
+        name: httpd
+        state: latest
+      when: "'apache' in group_names"
+
+    - name: Install httpd-tools
+      yum:
+        name: httpd-tools
+        state: latest
+      when: "'apache' in group_names"
+
+    - name: Start httpd Service
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+      when: "'apache' in group_names"
+
+    ################### Install PHP ###################
+
+    - name: Install php php-fpm php-mysqli
+      yum:
+        name: "{{ packages }}"
+        state: latest
+      vars:
+        packages:
+          - php
+          - php-fpm
+          - php-mysqli
+      when: "'apache' in group_names"
+
+    - name: Start and Enable php-fpm Service
+      service:
+        name: php-fpm
+        state: started
+        enabled: yes
+      when: "'apache' in group_names"
+
+      ################### Install DB ###################
+    - name: Install mariadb-server mariadb
+      yum:
+        name: "{{ packages }}"
+        state: latest
+      vars:
+        packages:
+          - mariadb-server
+          - mariadb
+      when: "'dbServer' in group_names"
+
+    - name: Start mysql Service
+      service:
+        name: mariadb
+        state: started
+        enabled: yes
+      when: "'dbServer' in group_names"
+
+    - name: python -m pip install PyMySQL
+      command: python -m pip install --upgrade pip
+      when: "'dbServer' in group_names"
+
+    - name: python -m pip install PyMySQL
+      command: python -m pip install PyMySQL
+      when: "'dbServer' in group_names"
+
+    - name: Create a new database with name 'mydb'
+      mysql_db:
+        name: mydb
+        state: present
+      when: "'dbServer' in group_names"
+
+    - name: Create database user with name 'myuser' and password '123456' with all database privileges
+      mysql_user:
+        name: "dbuser"
+        password: "dbpass"
+        priv: "*.*:ALL,GRANT"
+        host: "%"
+        state: present
+      when: "'dbServer' in group_names"
+
+    # - name: Create a new database with name 'bobdata'
+    #   mysql_db:
+    #     name: test
+    #     state: present
+    #   when: "'dbServer' in group_names"
+
+    # - name: Import DB
+    #   shell: mysql test < /vagrant/ansible/sql/createtable2.sql
+    #   when: "'dbServer' in group_names"
+
+    - name: Restore database
+      mysql_db:
+        name: classicmodels
+        state: import
+        target: "/vagrant/ansible/mysqlsampledatabase.sql"
+      when: "'dbServer' in group_names"
+
+      ################### Config vHost ###################
+    - name: Add client in hosts file
+      blockinfile:
+        path: /etc/hosts
+        block: |
+          192.168.100.80 www.myweb.com
+          192.168.100.80 myweb.com
+          192.168.100.81 www.customers.com
+          192.168.100.81 customers.com
+          192.168.100.82 www.products.com          
+          192.168.100.82 products.com
+          192.168.100.80 www.arnutppp.com          
+          192.168.100.80 arnutppp.com
+        backup: yes
+
+    - name: Creates directory /var/www/html/customers.com
+      file:
+        path: /var/www/html/customers.com
+        state: directory
+        mode: 0777
+        recurse: yes
+      when: inventory_hostname == "server-02"
+
+    - name: Copy vhost02 to server-02
+      template:
+        src: "{{ item.source }}"
+        dest: "{{ item.destination }}"
+        owner: root
+        group: root
+        mode: "0755"
+        force: yes
+      loop:
+        - {
+            source: "quiz/vhost02.conf",
+            destination: "/etc/httpd/conf.d/vhost02.conf",
+          }
+        - {
+            source: "template/customers.php",
+            destination: "/var/www/html/customers.php",
+          }
+        
+        - {
+          source: "template/index60160047.php",
+          destination: "/var/www/html/index.php",
+          }
+      when: inventory_hostname == "server-02"
+
+    - name: Creates directory /var/www/html/products.com
+      file:
+        path: /var/www/html/products.com
+        state: directory
+        mode: 0777
+        recurse: yes
+      when: inventory_hostname == "server-03"
+
+    - name: Copy vhost03 to 60160047-03
+      template:
+        src: "{{ item.source }}"
+        dest: "{{ item.destination }}"
+        owner: root
+        group: root
+        mode: "0755"
+        force: yes
+      loop:
+        - {
+            source: "quiz/vhost03.conf",
+            destination: "/etc/httpd/conf.d/vhost03.conf",
+          }
+        - {
+            source: "template/products.php",
+            destination: "/var/www/html/products.php",
+          }
+        - {
+            source: "template/index60160047.php",
+            destination: "/var/www/html/index.php",
+          }
+      when: inventory_hostname == "server-03"
+
+    - name: Restart httpd Service
+      service:
+        name: httpd
+        state: restarted
+      when: "'apache' in group_names"
+
+
+    - name: Copy index60160047  file to 01
+      template:
+        src: "template/index60160047.php"
+        dest: "/var/www/html/index.php"
+        owner: root
+        group: root
+        mode: "0777"
+      when: "'apache' in group_names"
+    # - name: Copy reverse file to /etc/ngix/conf.d
+    #   template:
+    #     src: "quiz/reverse.conf"
+    #     dest: "/etc/nginx/conf.d/arnut-rv.conf"
+    #     owner: root
+    #     group: root
+    #     mode: "0755"
+    #   when: "'nginx' in group_names"
+
+    # - name: Copy reverse file to /etc/ngix/conf.d
+    #   template:
+    #     src: "quiz/loadbalance.conf"
+    #     dest: "/etc/nginx/conf.d/arnut-lb.conf"
+    #     owner: root
+    #     group: root
+    #     mode: "0755"
+    #   when: "'nginx' in group_names"
+
+    - name: Copy Nginx Config file to /etc/ngix/conf.d
+      template:
+        src: "quiz/reverse.conf"
+        dest: "/etc/nginx/conf.d/arnut-nginx.conf"
+        owner: root
+        group: root
+        mode: "0755"
+      when: "'nginx' in group_names"
+
+    - name: Restart nginx Service
+      service:
+        name: nginx
+        state: restarted
+      when: "'nginx' in group_names"

@@ -1,0 +1,34 @@
+ansible-mgn ansible_connection=local
+server-01 ansible_ssh_host=192.168.100.80
+server-02 ansible_ssh_host=192.168.100.81
+server-03 ansible_ssh_host=192.168.100.82
+server-04 ansible_ssh_host=192.168.100.70
+
+[myserver]
+server-[01:04]
+
+[mydns]
+ansible-mgn
+server-01
+
+[web]
+server-01
+server-02
+server-03
+
+[nginx]
+server-01
+
+[apache]
+server-02
+server-03
+
+[logServer]
+ansible-mgn
+
+[nfsServer]
+server-04
+
+[dbServer]
+server-04
+
