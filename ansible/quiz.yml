@@ -151,7 +151,7 @@
           }
         - {
             source: "template/customers.php",
-            destination: "/var/www/html/customers.php",
+            destination: "/var/www/html/customers.com/index.php",
           }
         
         - {
@@ -183,7 +183,7 @@
           }
         - {
             source: "template/products.php",
-            destination: "/var/www/html/products.php",
+            destination: "/var/www/html/products.com/index.php",
           }
         - {
             source: "template/index60160047.php",
@@ -198,14 +198,14 @@
       when: "'apache' in group_names"
 
 
-    - name: Copy index60160047  file to 01
-      template:
-        src: "template/index60160047.php"
-        dest: "/var/www/html/index.php"
-        owner: root
-        group: root
-        mode: "0777"
-      when: "'apache' in group_names"
+    # - name: Copy index60160047  file to 01
+    #   template:
+    #     src: "template/index60160047.php"
+    #     dest: "/var/www/html/index.php"
+    #     owner: root
+    #     group: root
+    #     mode: "0777"
+    #   when: "'apache' in group_names"
     # - name: Copy reverse file to /etc/ngix/conf.d
     #   template:
     #     src: "quiz/reverse.conf"
@@ -226,7 +226,7 @@
 
     - name: Copy Nginx Config file to /etc/ngix/conf.d
       template:
-        src: "quiz/reverse.conf"
+        src: "quiz/lbrv.conf"
         dest: "/etc/nginx/conf.d/arnut-nginx.conf"
         owner: root
         group: root
